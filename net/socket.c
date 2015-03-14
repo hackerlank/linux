@@ -381,7 +381,7 @@ struct file *sock_alloc_file(struct socket *sock, int flags, const char *dname)
 	}
 
 	sock->file = file;
-	file->f_flags = O_RDWR | (flags & O_NONBLOCK);
+	file->f_flags = O_RDWR | (flags & (O_NONBLOCK | O_NOSIGPIPE));
 	file->private_data = sock;
 	return file;
 }
@@ -759,6 +759,7 @@ static ssize_t sock_sendpage(struct file *file, struct page *page,
 	sock = file->private_data;
 
 	flags = (file->f_flags & O_NONBLOCK) ? MSG_DONTWAIT : 0;
+	flags |= (file->f_flags & O_NOSIGPIPE) ? MSG_NOSIGNAL : 0;
 	/* more is a combination of MSG_MORE and MSG_SENDPAGE_NOTLAST */
 	flags |= more;
 
@@ -812,6 +813,9 @@ static ssize_t sock_write_iter(struct kiocb *iocb, struct iov_iter *from)
 
 	if (file->f_flags & O_NONBLOCK)
 		msg.msg_flags = MSG_DONTWAIT;
+
+	if (file->f_flags & O_NOSIGPIPE)
+		msg.msg_flags |= MSG_NOSIGNAL;
 
 	if (sock->type == SOCK_SEQPACKET)
 		msg.msg_flags |= MSG_EOR;
@@ -1224,12 +1228,14 @@ SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
 
 	/* Check the SOCK_* constants for consistency.  */
 	BUILD_BUG_ON(SOCK_CLOEXEC != O_CLOEXEC);
+	BUILD_BUG_ON(SOCK_NOSIGPIPE != O_NOSIGPIPE);
 	BUILD_BUG_ON((SOCK_MAX | SOCK_TYPE_MASK) != SOCK_TYPE_MASK);
 	BUILD_BUG_ON(SOCK_CLOEXEC & SOCK_TYPE_MASK);
 	BUILD_BUG_ON(SOCK_NONBLOCK & SOCK_TYPE_MASK);
+	BUILD_BUG_ON(SOCK_NOSIGPIPE & SOCK_TYPE_MASK);
 
 	flags = type & ~SOCK_TYPE_MASK;
-	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK))
+	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK | SOCK_NOSIGPIPE))
 		return -EINVAL;
 	type &= SOCK_TYPE_MASK;
 
@@ -1240,7 +1246,8 @@ SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
 	if (retval < 0)
 		goto out;
 
-	retval = sock_map_fd(sock, flags & (O_CLOEXEC | O_NONBLOCK));
+	flags &= (O_CLOEXEC | O_NONBLOCK | O_NOSIGPIPE)
+	retval = sock_map_fd(sock, flags);
 	if (retval < 0)
 		goto out_release;
 
@@ -1266,7 +1273,7 @@ SYSCALL_DEFINE4(socketpair, int, family, int, type, int, protocol,
 	int flags;
 
 	flags = type & ~SOCK_TYPE_MASK;
-	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK))
+	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK | SOCK_NOSIGPIPE))
 		return -EINVAL;
 	type &= SOCK_TYPE_MASK;
 
@@ -1436,7 +1443,7 @@ SYSCALL_DEFINE4(accept4, int, fd, struct sockaddr __user *, upeer_sockaddr,
 	int err, len, newfd, fput_needed;
 	struct sockaddr_storage address;
 
-	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK))
+	if (flags & ~(SOCK_CLOEXEC | SOCK_NONBLOCK | SOCK_NOSIGPIPE))
 		return -EINVAL;
 
 	if (SOCK_NONBLOCK != O_NONBLOCK && (flags & SOCK_NONBLOCK))
@@ -1653,6 +1660,8 @@ SYSCALL_DEFINE6(sendto, int, fd, void __user *, buff, size_t, len,
 	}
 	if (sock->file->f_flags & O_NONBLOCK)
 		flags |= MSG_DONTWAIT;
+	if (sock->file->f_flags & O_NOSIGPIPE)
+		flags |= MSG_NOSIGNAL;
 	msg.msg_flags = flags;
 	err = sock_sendmsg(sock, &msg);
 
@@ -1936,6 +1945,8 @@ static int ___sys_sendmsg(struct socket *sock, struct user_msghdr __user *msg,
 
 	if (sock->file->f_flags & O_NONBLOCK)
 		msg_sys->msg_flags |= MSG_DONTWAIT;
+	if (sock->file->f_flags & O_NOSIGPIPE)
+		msg_sys->msg_flags |= MSG_NOSIGNAL;
 	/*
 	 * If this is sendmmsg() and current destination address is same as
 	 * previously succeeded address, omit asking LSM's decision.

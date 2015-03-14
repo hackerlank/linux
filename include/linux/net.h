@@ -75,6 +75,9 @@ enum sock_type {
 #ifndef SOCK_NONBLOCK
 #define SOCK_NONBLOCK	O_NONBLOCK
 #endif
+#ifndef SOCK_NOSIGPIPE
+#define SOCK_NOSIGPIPE	O_NOSIGPIPE
+#endif
 
 #endif /* ARCH_HAS_SOCKET_TYPES */
 
