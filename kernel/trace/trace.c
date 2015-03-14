@@ -4917,7 +4917,7 @@ static ssize_t tracing_splice_read_pipe(struct file *filp,
 
 	spd.nr_pages = i;
 
-	ret = splice_to_pipe(pipe, &spd);
+	ret = splice_to_pipe(pipe, &spd, flags);
 out:
 	splice_shrink_spd(&spd);
 	return ret;
@@ -5810,7 +5810,7 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
 		goto again;
 	}
 
-	ret = splice_to_pipe(pipe, &spd);
+	ret = splice_to_pipe(pipe, &spd, flags);
 	splice_shrink_spd(&spd);
 
 	return ret;

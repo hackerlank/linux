@@ -1286,7 +1286,7 @@ static ssize_t subbuf_splice_actor(struct file *in,
 	if (!spd.nr_pages)
 		goto out;
 
-	ret = *nonpad_ret = splice_to_pipe(pipe, &spd);
+	ret = *nonpad_ret = splice_to_pipe(pipe, &spd, flags);
 	if (ret < 0 || ret < total_len)
 		goto out;
 

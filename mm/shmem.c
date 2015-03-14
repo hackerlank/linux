@@ -1726,7 +1726,7 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
 		page_cache_release(spd.pages[page_nr++]);
 
 	if (spd.nr_pages)
-		error = splice_to_pipe(pipe, &spd);
+		error = splice_to_pipe(pipe, &spd, flags);
 
 	splice_shrink_spd(&spd);
 

@@ -180,7 +180,8 @@ static void wakeup_pipe_readers(struct pipe_inode_info *pipe)
  *
  */
 ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
-		       struct splice_pipe_desc *spd)
+		       struct splice_pipe_desc *spd,
+		       unsigned int flags)
 {
 	unsigned int spd_pages = spd->nr_pages;
 	int ret, do_wakeup, page_nr;
@@ -193,7 +194,8 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
 
 	for (;;) {
 		if (!pipe->readers) {
-			send_sig(SIGPIPE, current, 0);
+			if (!(flags & SPLICE_F_NOSIGPIPE))
+				send_sig(SIGPIPE, current, 0);
 			if (!ret)
 				ret = -EPIPE;
 			break;
@@ -497,7 +499,7 @@ fill_it:
 	in->f_ra.prev_pos = (loff_t)index << PAGE_CACHE_SHIFT;
 
 	if (spd.nr_pages)
-		error = splice_to_pipe(pipe, &spd);
+		error = splice_to_pipe(pipe, &spd, flags);
 
 	splice_shrink_spd(&spd);
 	return error;
@@ -679,7 +681,7 @@ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
 	}
 	spd.nr_pages -= nr_freed;
 
-	res = splice_to_pipe(pipe, &spd);
+	res = splice_to_pipe(pipe, &spd, flags);
 	if (res > 0)
 		*ppos += res;
 
@@ -713,6 +715,7 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
 		return -EINVAL;
 
 	more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
+	more |= (sd->flags & SPLICE_F_NOSIGPIPE) ? MSG_NOSIGNAL : 0;
 
 	if (sd->len < sd->total_len && pipe->nrbufs > 1)
 		more |= MSG_SENDPAGE_NOTLAST;
@@ -1607,7 +1610,7 @@ static long vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
 	if (spd.nr_pages <= 0)
 		ret = spd.nr_pages;
 	else
-		ret = splice_to_pipe(pipe, &spd);
+		ret = splice_to_pipe(pipe, &spd, flags);
 
 	splice_shrink_spd(&spd);
 	return ret;
@@ -1761,7 +1764,8 @@ static int opipe_prep(struct pipe_inode_info *pipe, unsigned int flags)
 
 	while (pipe->nrbufs >= pipe->buffers) {
 		if (!pipe->readers) {
-			send_sig(SIGPIPE, current, 0);
+			if (!(flags & SPLICE_F_NOSIGPIPE))
+				send_sig(SIGPIPE, current, 0);
 			ret = -EPIPE;
 			break;
 		}
@@ -1812,7 +1816,8 @@ retry:
 
 	do {
 		if (!opipe->readers) {
-			send_sig(SIGPIPE, current, 0);
+			if (!(flags & SPLICE_F_NOSIGPIPE))
+				send_sig(SIGPIPE, current, 0);
 			if (!ret)
 				ret = -EPIPE;
 			break;
@@ -1916,7 +1921,8 @@ static int link_pipe(struct pipe_inode_info *ipipe,
 
 	do {
 		if (!opipe->readers) {
-			send_sig(SIGPIPE, current, 0);
+			if (!(flags & SPLICE_F_NOSIGPIPE))
+				send_sig(SIGPIPE, current, 0);
 			if (!ret)
 				ret = -EPIPE;
 			break;

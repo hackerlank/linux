@@ -19,6 +19,7 @@
 				 /* from/to, of course */
 #define SPLICE_F_MORE	(0x04)	/* expect more data */
 #define SPLICE_F_GIFT	(0x08)	/* pages passed in are a gift */
+#define SPLICE_F_NOSIGPIPE (0x10) /* do not send SIGPIPE */
 
 /*
  * Passed to the actors
@@ -71,7 +72,7 @@ extern ssize_t splice_from_pipe(struct pipe_inode_info *, struct file *,
 extern ssize_t __splice_from_pipe(struct pipe_inode_info *,
 				  struct splice_desc *, splice_actor *);
 extern ssize_t splice_to_pipe(struct pipe_inode_info *,
-			      struct splice_pipe_desc *);
+			      struct splice_pipe_desc *, unsigned int flags);
 extern ssize_t splice_direct_to_actor(struct file *, struct splice_desc *,
 				      splice_direct_actor *);
 
