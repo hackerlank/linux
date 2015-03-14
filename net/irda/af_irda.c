@@ -1530,13 +1530,14 @@ static int irda_sendmsg_dgram(struct socket *sock, struct msghdr *msg,
 
 	pr_debug("%s(), len=%zd\n", __func__, len);
 
-	if (msg->msg_flags & ~(MSG_DONTWAIT|MSG_CMSG_COMPAT))
+	if (msg->msg_flags & ~(MSG_DONTWAIT|MSG_CMSG_COMPAT|MSG_NOSIGNAL))
 		return -EINVAL;
 
 	lock_sock(sk);
 
 	if (sk->sk_shutdown & SEND_SHUTDOWN) {
-		send_sig(SIGPIPE, current, 0);
+		if (!(msg->msg_flags & MSG_NOSIGNAL))
+			send_sig(SIGPIPE, current, 0);
 		err = -EPIPE;
 		goto out;
 	}
@@ -1612,14 +1613,15 @@ static int irda_sendmsg_ultra(struct socket *sock, struct msghdr *msg,
 	pr_debug("%s(), len=%zd\n", __func__, len);
 
 	err = -EINVAL;
-	if (msg->msg_flags & ~(MSG_DONTWAIT|MSG_CMSG_COMPAT))
+	if (msg->msg_flags & ~(MSG_DONTWAIT|MSG_CMSG_COMPAT|MSG_NOSIGNAL))
 		return -EINVAL;
 
 	lock_sock(sk);
 
 	err = -EPIPE;
 	if (sk->sk_shutdown & SEND_SHUTDOWN) {
-		send_sig(SIGPIPE, current, 0);
+		if (!(msg->msg_flags & MSG_NOSIGNAL))
+			send_sig(SIGPIPE, current, 0);
 		goto out;
 	}
 

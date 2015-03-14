@@ -1454,7 +1454,8 @@ static int ax25_sendmsg(struct socket *sock, struct msghdr *msg, size_t len)
 	}
 
 	if (sk->sk_shutdown & SEND_SHUTDOWN) {
-		send_sig(SIGPIPE, current, 0);
+		if (!(msg->msg_flags & MSG_NOSIGNAL))
+			send_sig(SIGPIPE, current, 0);
 		err = -EPIPE;
 		goto out;
 	}

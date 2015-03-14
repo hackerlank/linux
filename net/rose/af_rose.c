@@ -1058,14 +1058,15 @@ static int rose_sendmsg(struct socket *sock, struct msghdr *msg, size_t len)
 	unsigned char *asmptr;
 	int n, size, qbit = 0;
 
-	if (msg->msg_flags & ~(MSG_DONTWAIT|MSG_EOR|MSG_CMSG_COMPAT))
+	if (msg->msg_flags & ~(MSG_DONTWAIT|MSG_EOR|MSG_CMSG_COMPAT|MSG_NOSIGNAL))
 		return -EINVAL;
 
 	if (sock_flag(sk, SOCK_ZAPPED))
 		return -EADDRNOTAVAIL;
 
 	if (sk->sk_shutdown & SEND_SHUTDOWN) {
-		send_sig(SIGPIPE, current, 0);
+		if (!(msg->msg_flags & MSG_NOSIGNAL))
+			send_sig(SIGPIPE, current, 0);
 		return -EPIPE;
 	}
 
