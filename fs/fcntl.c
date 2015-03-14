@@ -27,7 +27,8 @@
 #include <asm/siginfo.h>
 #include <asm/uaccess.h>
 
-#define SETFL_MASK (O_APPEND | O_NONBLOCK | O_NDELAY | O_DIRECT | O_NOATIME)
+#define SETFL_MASK (O_APPEND | O_NONBLOCK | O_NDELAY | O_DIRECT | O_NOATIME | \
+		    O_NOSIGPIPE)
 
 static int setfl(int fd, struct file * filp, unsigned long arg)
 {

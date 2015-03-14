@@ -351,7 +351,8 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
 	__pipe_lock(pipe);
 
 	if (!pipe->readers) {
-		send_sig(SIGPIPE, current, 0);
+		if (!(filp->f_flags & O_NOSIGPIPE))
+			send_sig(SIGPIPE, current, 0);
 		ret = -EPIPE;
 		goto out;
 	}
@@ -387,7 +388,8 @@ pipe_write(struct kiocb *iocb, struct iov_iter *from)
 		int bufs;
 
 		if (!pipe->readers) {
-			send_sig(SIGPIPE, current, 0);
+			if (!(filp->f_flags & O_NOSIGPIPE))
+				send_sig(SIGPIPE, current, 0);
 			if (!ret)
 				ret = -EPIPE;
 			break;
@@ -698,7 +700,7 @@ int create_pipe_files(struct file **res, int flags)
 	if (IS_ERR(f))
 		goto err_dentry;
 
-	f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT));
+	f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT | O_NOSIGPIPE));
 	f->private_data = inode->i_pipe;
 
 	res[0] = alloc_file(&path, FMODE_READ, &pipefifo_fops);
@@ -729,7 +731,7 @@ static int __do_pipe_flags(int *fd, struct file **files, int flags)
 	int error;
 	int fdw, fdr;
 
-	if (flags & ~(O_CLOEXEC | O_NONBLOCK | O_DIRECT))
+	if (flags & ~(O_CLOEXEC | O_NONBLOCK | O_DIRECT | O_NOSIGPIPE))
 		return -EINVAL;
 
 	error = create_pipe_files(files, flags);
