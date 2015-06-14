@@ -1621,7 +1621,7 @@ void ConfigMainWindow::listFocusChanged(void)
 
 void ConfigMainWindow::goBack(void)
 {
-	ConfigItem* item;
+	ConfigItem* item, *oldSelection;
 
 	configList->setParentMenu();
 	if (configList->rootEntry == &rootmenu)
@@ -1631,8 +1631,10 @@ void ConfigMainWindow::goBack(void)
 		return;
 
 	item = (ConfigItem*)menuList->selectedItems().first();
+	oldSelection = item;
 	while (item) {
 		if (item->menu == configList->rootEntry) {
+			oldSelection->setSelected(false);
 			item->setSelected(true);
 			break;
 		}
