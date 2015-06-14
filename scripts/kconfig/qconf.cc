@@ -399,6 +399,9 @@ void ConfigList::updateSelection(void)
 	struct menu *menu;
 	enum prop_type type;
 
+	if (selectedItems().count() == 0)
+		return;
+
 	ConfigItem* item = (ConfigItem*)selectedItems().first();
 	if (!item)
 		return;
@@ -1605,6 +1608,10 @@ void ConfigMainWindow::goBack(void)
 	configList->setParentMenu();
 	if (configList->rootEntry == &rootmenu)
 		backAction->setEnabled(false);
+
+	if (menuList->selectedItems().count() == 0)
+		return;
+
 	item = (ConfigItem*)menuList->selectedItems().first();
 	while (item) {
 		if (item->menu == configList->rootEntry) {
