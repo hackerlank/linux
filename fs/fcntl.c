@@ -335,6 +335,18 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
 	case F_GET_SEALS:
 		err = shmem_fcntl(filp, cmd, arg);
 		break;
+	case F_SETNOSIGPIPE:
+		spin_lock(&filp->f_lock);
+		if (arg)
+			filp->f_flags |= O_NOSIGPIPE;
+		else
+			filp->f_flags &= ~O_NOSIGPIPE;
+		spin_unlock(&filp->f_lock);
+		err = 0;
+		break;
+	case F_GETNOSIGPIPE:
+		err = !!(filp->f_flags & O_NOSIGPIPE);
+		break;
 	default:
 		break;
 	}

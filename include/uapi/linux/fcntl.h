@@ -34,6 +34,13 @@
 #define F_GET_SEALS	(F_LINUX_SPECIFIC_BASE + 10)
 
 /*
+ * Set/Get emission of SIGPIPE.
+ * (In our range, but similar to OS X and NetBSD)
+ */
+#define F_SETNOSIGPIPE	(F_LINUX_SPECIFIC_BASE + 11)
+#define F_GETNOSIGPIPE	(F_LINUX_SPECIFIC_BASE + 12)
+
+/*
  * Types of seals
  */
 #define F_SEAL_SEAL	0x0001	/* prevent further seals from being set */
