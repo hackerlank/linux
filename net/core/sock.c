@@ -988,6 +988,13 @@ set_rcvbuf:
 					 sk->sk_max_pacing_rate);
 		break;
 
+	case SO_NOSIGPIPE:
+		if (valbool)
+			sock->file->f_flags |= O_NOSIGPIPE;
+		else
+			sock->file->f_flags &= ~O_NOSIGPIPE;
+		break;
+
 	default:
 		ret = -ENOPROTOOPT;
 		break;
@@ -1246,6 +1253,10 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
 
 	case SO_INCOMING_CPU:
 		v.val = sk->sk_incoming_cpu;
+		break;
+
+	case SO_NOSIGPIPE:
+		v.val = !!(sock->file->f_flags & O_NOSIGPIPE);
 		break;
 
 	default:
